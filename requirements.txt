@@ -1,0 +1,14 @@
+torch>=2.4
+torchvision
+numpy
+Pillow
+opencv-python-headless
+transformers==4.57.3
+diffusers>=0.37
+accelerate
+safetensors
+einops
+tqdm
+controlnet-aux
+bitsandbytes
+datasets

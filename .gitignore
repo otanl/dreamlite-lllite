@@ -1,0 +1,47 @@
+# Test scratch dirs
+tests/_train_smoke/
+tests/_inject_smoke/
+tests/_e2e/
+
+# Internal drafts (not part of the v0.1 release)
+huggingface/*.draft.md
+
+# AI assistant tooling artifacts (do not commit)
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+.aider*
+.github/copilot-*
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Outputs / weights
+output/
+runs/
+checkpoints/
+*.safetensors
+*.pt
+*.bin
+*.ckpt
+!tests/fixtures/*.safetensors
+
+# Datasets
+data/
+datasets/
+*.zip
+*.tar
+*.tar.gz
+
+# DreamLite weights (NC-licensed, do not commit)
+models/
+
+# IDE
+.vscode/
+.idea/
