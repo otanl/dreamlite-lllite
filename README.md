@@ -25,18 +25,18 @@ auto-detected from `model_index.json`.
                               cond image (canny / depth / pose)
                                      │
                                      ▼
-          ┌─────────────────────────────────────┐
+          ┌──────────────────────────────────────┐
           │   per-block CNN encoder (depth-aware)│
-          └────────────────┬────────────────────┘
+          └────────────────┬─────────────────────┘
                            │  cond_emb at each block resolution
                            ▼
-   ┌────────────────────────────────────────────────────────────┐
+   ┌─────────────────────────────────────────────────────────────┐
    │ DreamLite-mobile UNet (frozen)                              │
    │                                                             │
    │   attn1.to_q  ─┐ │ attn2.to_q ─┐                            │
    │   attn1.to_k  ─┼─►  +δ via LLLiteModule (down → mid → up)   │
    │   attn1.to_v  ─┘   (zero-init at start of training)         │
-   └────────────────────────────────────────────────────────────┘
+   └─────────────────────────────────────────────────────────────┘
                            │
                            ▼ noise prediction (flow matching)
 ```
