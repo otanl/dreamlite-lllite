@@ -10,13 +10,16 @@ ControlNet-LLLite for DreamLite is **Adapted Material** (CC BY-NC 4.0 §1(a)) of
 
 - Paper: *DreamLite: A Lightweight On-Device Unified Model for Image Generation
   and Editing.* arXiv:2603.28713 (2026).
-- License: Model weights are released under
-  [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
-  See [`WEIGHTS_LICENSE`](./WEIGHTS_LICENSE).
+- License: DreamLite model weights are released under
+  [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — the
+  authoritative text lives in [the upstream DreamLite repository's
+  `WEIGHTS_LICENSE`](https://github.com/ByteVisionLab/DreamLite/blob/main/WEIGHTS_LICENSE).
 - Modifications: We add a ControlNet-LLLite adapter and the conditioning
-  encoder that is trained on top of the DreamLite-mobile UNet. No DreamLite
-  weights are redistributed by this repository; consumers must download the
-  base weights from the original distribution.
+  encoder trained on top of the DreamLite UNet. **No DreamLite weights
+  and no trained adapter weights are redistributed by this repository.**
+  Anyone who trains adapters with this code produces Adapted Material of
+  DreamLite (CC BY-NC 4.0 §1(a)); they may redistribute the resulting
+  weights only under CC BY-NC 4.0 with these attributions preserved.
 
 ## ControlNet-LLLite (kohya-ss)
 

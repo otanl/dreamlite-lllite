@@ -12,12 +12,13 @@ Both share the same UNet architecture, VAE, and Qwen3-VL text encoder, so
 the same training/inference code drives both — the pipeline class is
 auto-detected from `model_index.json`.
 
-> **License notice:** trained adapter weights are an *Adapted Material* of
-> DreamLite (CC BY-NC 4.0). Both the LLLite weights and any redistribution
-> of them are bound by the same non-commercial license. The code in this
-> repo (`src/`, `scripts/`, `tests/`) is Apache-2.0. See
-> [`LICENSE`](./LICENSE), [`WEIGHTS_LICENSE`](./WEIGHTS_LICENSE), and
-> [`ATTRIBUTION.md`](./ATTRIBUTION.md).
+> **License notice:** the code in this repo (`src/`, `scripts/`, `tests/`)
+> is Apache-2.0 (see [`LICENSE`](./LICENSE)). **No trained adapter weights
+> are distributed here** — DreamLite is in early access. If you train your
+> own adapters with this code, the resulting weights are *Adapted Material*
+> of DreamLite under [CC BY-NC 4.0](https://github.com/ByteVisionLab/DreamLite/blob/main/WEIGHTS_LICENSE)
+> (non-commercial only). See [`ATTRIBUTION.md`](./ATTRIBUTION.md) for
+> required attributions when redistributing trained weights.
 
 ## What it does
 
