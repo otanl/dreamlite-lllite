@@ -1,6 +1,6 @@
 from .lllite import LLLiteModule, LLLiteController
 from .inject import apply_lllite, remove_lllite, list_lllite_targets
-from .pipeline import DreamLiteMobileLLLitePipeline
+from .pipeline import DreamLiteLLLitePipeline, DreamLiteMobileLLLitePipeline
 
 __all__ = [
     "LLLiteModule",
@@ -8,7 +8,8 @@ __all__ = [
     "apply_lllite",
     "remove_lllite",
     "list_lllite_targets",
-    "DreamLiteMobileLLLitePipeline",
+    "DreamLiteLLLitePipeline",
+    "DreamLiteMobileLLLitePipeline",  # backwards-compat alias
 ]
 
 __version__ = "0.1.0"

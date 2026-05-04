@@ -1,13 +1,21 @@
-"""DreamLite-mobile pipeline + LLLite controller helpers.
+"""DreamLite pipeline + LLLite controller wrapper.
 
-We do not subclass `DreamLiteMobilePipeline` — DreamLite's pipeline is a
-thin wrapper around `from_pretrained` and we only need to bolt LLLite onto
-the loaded UNet. Keeping the wrapper minimal also avoids tying us to a
-specific DreamLite revision.
+Auto-detects the underlying DreamLite variant (mobile vs base) by reading
+`<model_path>/model_index.json`'s ``_class_name``, so the same wrapper works
+for both:
+
+  * ``DreamLiteMobilePipeline`` — 4-step distilled, no CFG
+  * ``DreamLitePipeline``       — 28-step, CFG + IMG_CFG
+
+The two share the same UNet architecture, VAE, and Qwen3-VL text encoder
+(in fact the VAE / TE weights are byte-identical), so an LLLite adapter
+only differs in the UNet weights it has seen during training. We therefore
+route both variants through one wrapper.
 """
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Optional
 
@@ -17,12 +25,37 @@ from .inject import apply_lllite, remove_lllite
 from .lllite import LLLiteController
 
 
-class DreamLiteMobileLLLitePipeline:
-    """Wrap a DreamLiteMobilePipeline + LLLite controller behind one object.
+def _detect_pipeline_class(model_path: str):
+    """Return the DreamLite pipeline class to use for the given model dir.
+
+    Falls back to ``DreamLiteMobilePipeline`` if model_index.json is missing
+    or unreadable, since mobile is the more common case for LLLite.
+    """
+    idx = os.path.join(model_path, "model_index.json")
+    name = "DreamLiteMobilePipeline"
+    try:
+        with open(idx, "r", encoding="utf-8") as f:
+            name = json.load(f).get("_class_name", name)
+    except FileNotFoundError:
+        pass
+    if name == "DreamLitePipeline":
+        from dreamlite import DreamLitePipeline as Cls
+    elif name == "DreamLiteMobilePipeline":
+        from dreamlite import DreamLiteMobilePipeline as Cls
+    else:
+        # Try generic import; will raise an informative error if missing.
+        import importlib
+        mod = importlib.import_module("dreamlite")
+        Cls = getattr(mod, name)
+    return Cls, name
+
+
+class DreamLiteLLLitePipeline:
+    """Wrap a DreamLite{,Mobile}Pipeline + LLLite controller behind one object.
 
     Usage:
-        pipe = DreamLiteMobileLLLitePipeline.from_pretrained(
-            "models/DreamLite-mobile",
+        pipe = DreamLiteLLLitePipeline.from_pretrained(
+            "models/DreamLite-mobile",   # or "models/DreamLite-base"
             cond_emb_dim=32, mlp_dim=64,
         )
         pipe.load_lllite_weights("path/to/canny.safetensors")
@@ -30,9 +63,10 @@ class DreamLiteMobileLLLitePipeline:
         image = pipe(prompt="...", num_inference_steps=4).images[0]
     """
 
-    def __init__(self, base_pipeline, controller: LLLiteController):
+    def __init__(self, base_pipeline, controller: LLLiteController, variant: str):
         self.base = base_pipeline
         self.controller = controller
+        self.variant = variant  # "DreamLiteMobilePipeline" or "DreamLitePipeline"
 
     # ------------------------------------------------------------------
     @classmethod
@@ -45,13 +79,9 @@ class DreamLiteMobileLLLitePipeline:
         mlp_dim: int = 64,
         cond_image_size: int = 1024,
         multiplier: float = 1.0,
-    ) -> "DreamLiteMobileLLLitePipeline":
-        # Late import so this module is importable without DreamLite present.
-        from dreamlite import DreamLiteMobilePipeline
-
-        base = DreamLiteMobilePipeline.from_pretrained(
-            model_path, torch_dtype=torch_dtype
-        ).to(device)
+    ) -> "DreamLiteLLLitePipeline":
+        Cls, variant = _detect_pipeline_class(model_path)
+        base = Cls.from_pretrained(model_path, torch_dtype=torch_dtype).to(device)
         controller = apply_lllite(
             base.unet,
             cond_emb_dim=cond_emb_dim,
@@ -62,7 +92,7 @@ class DreamLiteMobileLLLitePipeline:
         # Move adapter modules to UNet's device/dtype (parameters of the
         # adapter were created on CPU/fp32 by default).
         controller.to(device=device, dtype=torch_dtype)
-        return cls(base, controller)
+        return cls(base, controller, variant)
 
     # ------------------------------------------------------------------
     # LLLite weight management
@@ -89,7 +119,6 @@ class DreamLiteMobileLLLitePipeline:
             sd = {k: v.to(dtype).cpu() for k, v in sd.items()}
         if path.endswith(".safetensors"):
             from safetensors.torch import save_file
-            # safetensors metadata must be str -> str
             md = {k: str(v) for k, v in (metadata or {}).items()}
             save_file(sd, path, md)
         else:
@@ -99,11 +128,9 @@ class DreamLiteMobileLLLitePipeline:
     # Conditioning
     # ------------------------------------------------------------------
     def set_cond_image(self, cond_image: Optional[torch.Tensor]) -> None:
-        """cond_image: (B, 3, H, W) float in [-1, 1] on any device."""
         if cond_image is None:
             self.controller.set_cond_image(None)
             return
-        # Move to UNet device/dtype to keep encoder math consistent.
         param = next(self.base.unet.parameters())
         cond_image = cond_image.to(device=param.device, dtype=param.dtype)
         self.controller.set_cond_image(cond_image)
@@ -112,7 +139,6 @@ class DreamLiteMobileLLLitePipeline:
         self.controller.set_multiplier(value)
 
     def detach_lllite(self) -> None:
-        """Restore original Linear forwards (turn LLLite off completely)."""
         remove_lllite(self.controller)
 
     # ------------------------------------------------------------------
@@ -120,3 +146,7 @@ class DreamLiteMobileLLLitePipeline:
     # ------------------------------------------------------------------
     def __call__(self, *args, **kwargs):
         return self.base(*args, **kwargs)
+
+
+# Backwards-compatible alias for v0.1 callers.
+DreamLiteMobileLLLitePipeline = DreamLiteLLLitePipeline

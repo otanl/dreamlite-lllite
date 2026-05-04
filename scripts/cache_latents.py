@@ -73,8 +73,10 @@ def main():
 
     dtype = {"float16": torch.float16, "bfloat16": torch.bfloat16}[args.dtype]
 
-    # Load DreamLite to access vae + text_encoder + helpers
-    print("loading DreamLite-mobile…")
+    # Load DreamLite to access vae + text_encoder + helpers (auto base/mobile)
+    from dreamlite_lllite.pipeline import _detect_pipeline_class
+    PipelineCls, variant = _detect_pipeline_class(args.model)
+    print(f"loading {variant} from {args.model}…")
     if args.quantize_te:
         from transformers import BitsAndBytesConfig, Qwen3VLForConditionalGeneration, AutoTokenizer
         try:
@@ -84,7 +86,6 @@ def main():
         from diffusers.models import AutoencoderTiny
         from diffusers.schedulers import FlowMatchEulerDiscreteScheduler
         from dreamlite.models import DreamLiteUNetModel
-        from dreamlite import DreamLiteMobilePipeline
 
         bnb = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4",
@@ -98,14 +99,13 @@ def main():
         sched = FlowMatchEulerDiscreteScheduler.from_pretrained(os.path.join(args.model, "scheduler"))
         vae = AutoencoderTiny.from_pretrained(os.path.join(args.model, "vae"), torch_dtype=dtype)
         unet = DreamLiteUNetModel.from_pretrained(os.path.join(args.model, "unet"), torch_dtype=dtype)
-        pipe = DreamLiteMobilePipeline(
+        pipe = PipelineCls(
             text_encoder=te, tokenizer=tok, processor=proc,
             scheduler=sched, vae=vae, unet=unet,
         )
         pipe.vae.to(args.device)
     else:
-        from dreamlite import DreamLiteMobilePipeline
-        pipe = DreamLiteMobilePipeline.from_pretrained(args.model, torch_dtype=dtype).to(args.device)
+        pipe = PipelineCls.from_pretrained(args.model, torch_dtype=dtype).to(args.device)
 
     pipe.vae.eval()
     pipe.text_encoder.eval()

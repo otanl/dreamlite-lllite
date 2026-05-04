@@ -1,9 +1,16 @@
 # ControlNet-LLLite for DreamLite (Non-Commercial)
 
 A port of [kohya-ss/ControlNet-LLLite](https://github.com/kohya-ss/sd-scripts)
-to [DreamLite-mobile](https://github.com/ByteVisionLab/DreamLite). Adds
-ControlNet-style spatial control (canny / depth / pose) to the 4-step
-DreamLite-mobile UNet via small per-attention LLLite adapters.
+to [DreamLite](https://github.com/ByteVisionLab/DreamLite). Adds
+ControlNet-style spatial control (canny / depth / pose) to **both**
+DreamLite variants via small per-attention LLLite adapters:
+
+* **DreamLite-mobile** — 4-step distilled UNet (~13 M params per adapter)
+* **DreamLite-base**   — 28-step UNet, sharper output (~13 M params per adapter)
+
+Both share the same UNet architecture, VAE, and Qwen3-VL text encoder, so
+the same training/inference code drives both — the pipeline class is
+auto-detected from `model_index.json`.
 
 > **License notice:** trained adapter weights are an *Adapted Material* of
 > DreamLite (CC BY-NC 4.0). Both the LLLite weights and any redistribution
@@ -162,44 +169,58 @@ size=1024 bf16 + grad checkpoint   slower (run grad_accum to amortize)
 
 ## Sample results
 
-Both adapters trained for 12 epochs on 4 000 synthetic 1024² samples that
-DreamLite-mobile generated from itself, then evaluated on a held-out
-prompt with a fresh seed (so any structural similarity is attributable to
-LLLite, not noise re-use).
+All four adapters trained for 12 epochs on 4 000 synthetic 1024² samples,
+then evaluated on a held-out prompt with a fresh seed (so any structural
+similarity is attributable to LLLite, not noise re-use).
 
-### Canny
+### Mobile — Canny
 
 | target | conditioning | LLLite **off** (m=0) | LLLite **on** (m=0.7) |
 |:---:|:---:|:---:|:---:|
 | ![target](assets/samples/canny_target.png) | ![cond](assets/samples/canny_cond.png) | ![off](assets/samples/canny_gen_m0.png) | ![on](assets/samples/canny_gen_m07.png) |
 
-Without LLLite, the model wanders compositionally; with the canny adapter
-the wolf's pose, the moon, and the armor lines are reproduced faithfully.
-
-### Depth
+### Mobile — Depth
 
 | target | conditioning | LLLite **off** (m=0) | LLLite **on** (m=0.7) |
 |:---:|:---:|:---:|:---:|
 | ![target](assets/samples/depth_target.png) | ![cond](assets/samples/depth_cond.png) | ![off](assets/samples/depth_gen_m0.png) | ![on](assets/samples/depth_gen_m07.png) |
 
-The depth adapter pins the 3D layout — silhouette, foreground sword, and
-the background moon disc all align with the depth map.
+### Base — Canny (28-step inference, sharper output)
+
+| target | conditioning | LLLite **off** (m=0) | LLLite **on** (m=1.0) |
+|:---:|:---:|:---:|:---:|
+| ![target](assets/samples/base_canny_target.png) | ![cond](assets/samples/base_canny_cond.png) | ![off](assets/samples/base_canny_gen_m0.png) | ![on](assets/samples/base_canny_gen_m1.png) |
+
+### Base — Depth
+
+| target | conditioning | LLLite **off** (m=0) | LLLite **on** (m=0.7) |
+|:---:|:---:|:---:|:---:|
+| ![target](assets/samples/base_depth_target.png) | ![cond](assets/samples/base_depth_cond.png) | ![off](assets/samples/base_depth_gen_m0.png) | ![on](assets/samples/base_depth_gen_m07.png) |
 
 ### Numerical metrics (mean over 6 holdout images)
 
-| Conditioning | metric | m=0.0 (off) | **m=0.7** (recommended) | m=1.0 (full) |
-|---|---|---|---|---|
-| Canny | edge_iou (higher = better) | 0.031 | **0.113** | 0.124 |
-| Depth | abs_depth_diff (lower = better) | 0.264 | **0.091** | 0.124 |
+| Variant | Cond  | metric | m=0.0 (off) | m=0.7 | m=1.0 |
+|---|---|---|---|---|---|
+| Mobile | Canny | edge_iou ↑ | 0.031 | **0.113** | 0.124 |
+| Mobile | Depth | abs_diff ↓ | 0.264 | **0.091** | 0.124 |
+| Base   | Canny | edge_iou ↑ | 0.030 | 0.136 | **0.174** |
+| Base   | Depth | abs_diff ↓ | 0.293 | 0.105 | **0.104** |
 
-`m=0.7` is the recommended inference multiplier: for canny it keeps ~91 %
-of control with crisper output, and for depth it actually *outperforms*
-`1.0` because full strength tends to flatten depth variation.
+**Per-variant recommended `--multiplier`:**
+
+* Mobile canny / depth → **0.7** (crisper detail; depth at 0.7 even beats 1.0)
+* Base canny → **1.0** (28-step inference can absorb full strength without
+  blur; control is ~40 % stronger than mobile)
+* Base depth → **0.7 or 1.0** (essentially tied)
 
 Hyperparameters (12 epochs, AdamW8bit, bf16, gradient checkpointing, eff.
 batch 8):
 * Canny — kohya defaults: `cond_emb_dim=32, mlp_dim=64, lr=2e-4`
 * Depth — half per kohya's hint: `cond_emb_dim=16, mlp_dim=32, lr=1e-4`
+
+Mobile and base share the same VAE / TE weights byte-for-byte, so the
+canny / depth conditioning images and cached latents from one variant are
+reusable for the other — only the UNet weights differ during training.
 
 ## Pre-trained weights are NOT distributed
 

@@ -239,13 +239,13 @@ def main():
     }[args.mixed_precision]
 
     # ------------------------------------------------------------------
-    # Load DreamLite-mobile pipeline (we only use sub-modules from it)
+    # Load the DreamLite pipeline (auto-detects mobile vs base from
+    # model_index.json). We only use sub-modules from it.
     # ------------------------------------------------------------------
-    print("loading DreamLite-mobile components…")
-    from dreamlite import DreamLiteMobilePipeline
-    pipe = DreamLiteMobilePipeline.from_pretrained(
-        args.model, torch_dtype=weight_dtype
-    ).to(device)
+    from dreamlite_lllite.pipeline import _detect_pipeline_class
+    PipelineCls, variant = _detect_pipeline_class(args.model)
+    print(f"loading {variant} from {args.model}…")
+    pipe = PipelineCls.from_pretrained(args.model, torch_dtype=weight_dtype).to(device)
     vae = pipe.vae
     text_encoder = pipe.text_encoder
     tokenizer = pipe.tokenizer
