@@ -261,15 +261,7 @@ own.
 
 ## References
 
-This project does not have a paper of its own — it's a small adaptation
-layer that depends on two upstream works. If your downstream research
-benefits from this code, please cite the originals:
-
-* DreamLite (the base model) — *DreamLite: A Lightweight On-Device Unified
-  Model for Image Generation and Editing* by Feng et al., 2026
-  ([arXiv:2603.28713](https://arxiv.org/abs/2603.28713)).
-* ControlNet-LLLite (the adapter design) — kohya-ss,
-  [sd-scripts](https://github.com/kohya-ss/sd-scripts).
-
-If you specifically want to reference this repository, a URL citation is
-fine: `https://github.com/otanl/dreamlite-lllite`.
+* DreamLite — Feng et al., 2026,
+  [arXiv:2603.28713](https://arxiv.org/abs/2603.28713)
+* ControlNet-LLLite — kohya-ss,
+  [sd-scripts](https://github.com/kohya-ss/sd-scripts)
