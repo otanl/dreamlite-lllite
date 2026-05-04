@@ -259,24 +259,17 @@ own.
   sizes work but require more VRAM; enable `--gradient_checkpointing` and
   `--gradient_accumulation_steps`.
 
-## Citation
+## References
 
-If you use this work, please cite the underlying papers:
+This project does not have a paper of its own — it's a small adaptation
+layer that depends on two upstream works. If your downstream research
+benefits from this code, please cite the originals:
 
-```bibtex
-@article{feng2026dreamlite,
-  title={DreamLite: A Lightweight On-Device Unified Model for Image
-         Generation and Editing},
-  author={Feng, Kailai and Wei, Yuxiang and Chen, Bo and Pan, Yang and
-          Ye, Hu and Liu, Songwei and Yan, Chenqian and Gao, Yuan},
-  journal={arXiv preprint arXiv:2603.28713},
-  year={2026}
-}
+* DreamLite (the base model) — *DreamLite: A Lightweight On-Device Unified
+  Model for Image Generation and Editing* by Feng et al., 2026
+  ([arXiv:2603.28713](https://arxiv.org/abs/2603.28713)).
+* ControlNet-LLLite (the adapter design) — kohya-ss,
+  [sd-scripts](https://github.com/kohya-ss/sd-scripts).
 
-@misc{kohya-ss-lllite,
-  title  = {ControlNet-LLLite},
-  author = {kohya-ss},
-  year   = {2023},
-  url    = {https://github.com/kohya-ss/sd-scripts}
-}
-```
+If you specifically want to reference this repository, a URL citation is
+fine: `https://github.com/otanl/dreamlite-lllite`.
